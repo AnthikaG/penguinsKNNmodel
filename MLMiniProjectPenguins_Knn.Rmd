@@ -1,0 +1,96 @@
+---
+title: "ML Mini Project Penguins KNN"
+output: html_notebook
+---
+ 
+
+```{r}
+#libraries
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(caret)
+library(palmerpenguins)   
+library(randomForest)
+library(ggthemes)
+```
+```{r}
+#shows the chart
+view(penguins)
+```
+
+```{r}
+#plots the data onto a scatter plot
+ggplot(
+  data = penguins,
+  mapping = aes(x = flipper_length_mm, y = body_mass_g)
+) +
+  geom_point(aes(color = species, shape = species)) +
+  geom_smooth(method = "lm") +
+  labs(
+    title = "Body mass and flipper length",
+    subtitle = "Dimensions for Adelie, Chinstrap, and Gentoo Penguins",
+    x = "Flipper length (mm)", y = "Body mass (g)",
+    color = "Species", shape = "Species"
+  ) +
+  scale_color_colorblind()
+```
+
+
+```{r}
+# Handle missing values
+penguins <- penguins %>%
+  mutate(across(c(bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g), ~ifelse(is.na(.), mean(., na.rm = TRUE), .))) %>%
+  drop_na(sex)
+```
+
+```{r}
+# structure of data frame
+str(penguins)
+```
+
+```{r}
+#Data Slicing
+set.seed(3033)
+intrain <- createDataPartition(y = penguins$species, p= 0.7, list = FALSE)
+training <- penguins[intrain,]
+testing <- penguins[-intrain,]
+```
+
+```{r}
+#checking the dimensions of our training data frame and testing data frame
+dim(training); dim(testing);
+```
+```{r}
+# check whether our data contains missing values
+anyNA(penguins)
+```
+```{r}
+summary(penguins)
+```
+```{r}
+#target variable consists of 3 values 1, 2, 3. These should considered as categorical variables. To convert these to categorical variables, we can convert them to factors.
+training[["species"]] = factor(training[["species"]])
+```
+
+```{r}
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+set.seed(3333)
+knn_fit <- train(species ~., data = training, method = "knn",
+ trControl=trctrl,
+ preProcess = c("center", "scale"),
+ tuneLength = 10)
+```
+
+```{r}
+knn_fit
+```
+```{r}
+test_pred = predict(knn_fit, newdata = testing)
+ test_pred
+```
+
+```{r}
+confusionMatrix(test_pred,as.factor(testing$species))
+```
+
